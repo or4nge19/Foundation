@@ -1,0 +1,2 @@
+import Philosophy.Aristotle.PosteriorAnalytics.Semantics
+import Philosophy.Aristotle.PosteriorAnalytics.Core

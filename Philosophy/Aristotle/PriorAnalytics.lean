@@ -1,0 +1,4 @@
+import Philosophy.Aristotle.PriorAnalytics.Syntax
+import Philosophy.Aristotle.PriorAnalytics.ProofTheory
+import Philosophy.Aristotle.PriorAnalytics.Chains
+import Philosophy.Aristotle.PriorAnalytics.Regress
