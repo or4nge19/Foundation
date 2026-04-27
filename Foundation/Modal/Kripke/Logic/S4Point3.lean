@@ -85,7 +85,11 @@ instance : Complete Modal.S4Point3 FrameClass.finite_S4Point3 := ⟨by
   apply Model.pointGenerate.modal_equivalent_at_root (M := M) (r := r) |>.mp;
 
   let FRM := finestFiltrationTransitiveClosureModel RM (φ.subformulas);
-  apply filtration FRM (finestFiltrationTransitiveClosureModel.filterOf (trans := Frame.pointGenerate.isTransitive)) (by simp) |>.mpr;
+  -- TODO: more refactor (auto instantinate)
+  have := finestFiltrationTransitiveClosureModel.rooted_isPiecewiseStronglyConnected r (T := φ.subformulas);
+  have := finestFiltrationTransitiveClosureModel.isReflexive (M := RM) (T := φ.subformulas);
+
+  apply filtration FRM (finestFiltrationTransitiveClosureModel.filterOf) (by grind) |>.mpr;
   apply hφ;
   apply Set.mem_setOf_eq.mpr;
   refine { world_finite := FilterEqvQuotient.finite $ by simp; }
@@ -118,15 +122,15 @@ instance : Modal.S4Point2 ⪱ Modal.S4Point3 := by
           ps_convergent := by intro x y z Rxy Rxz; use 3; omega
         };
       . apply Kripke.Satisfies.or_def.not.mpr;
-        push_neg;
+        push Not;
         constructor;
         . apply Kripke.Satisfies.box_def.not.mpr;
-          push_neg;
+          push Not;
           use 1;
           simp [Satisfies, Semantics.Models, M];
           constructor <;> grind;
         . apply Kripke.Satisfies.box_def.not.mpr;
-          push_neg;
+          push Not;
           use 2;
           simp [Satisfies, Semantics.Models, M];
           constructor <;> grind;

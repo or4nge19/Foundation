@@ -15,32 +15,31 @@ open FirstOrder
 open Modal
 open Modal.Kripke
 open ArithmeticTheory (provabilityLogicOn)
+open Modal.Formula.Kripke
 
 variable {T : ArithmeticTheory} [T.Δ₁] [𝗜𝚺₁ ⪯ T] {A : Modal.Formula _}
 
 theorem unprovable_realization_exists
-  (M₁ : Model) [Fintype M₁] {r₁ : M₁} [M₁.IsConverseWellFounded] [M₁.IsTransitive] [M₁.IsRootedBy r₁]
-  (hA : r₁ ⊭ A) (h : M₁.height < T.height)
+  (M₁ : Model) [Fintype M₁] [M₁.IsConverseWellFounded] [M₁.IsTransitive] [M₁.IsRooted]
+  (hA : M₁.root.1 ⊭ A) (h : M₁.height < T.height)
   : ∃ f : T.StandardRealization, T ⊬ f A := by
   let M₀ := M₁.extendRoot 1
-  let r₀ : M₀ := Frame.extendRoot.root
-  have hdnA : r₀ ⊧ ◇(∼A) := by
-    suffices ∃ i, r₀ ≺ i ∧ i ⊭ A by simpa [Formula.Kripke.Satisfies]
-    refine ⟨.inr r₁, ?_, ?_⟩
-    · simpa [r₀] using Frame.extendRoot.rooted_original
+  let r₀ : M₀.Root := M₀.root;
+  have hdnA : Satisfies M₀ M₀.root.1 (◇(∼A)) := by
+    suffices ∃ i, r₀.1 ≺ i ∧ ¬Satisfies _ i A by simpa [Formula.Kripke.Satisfies]
+    refine ⟨.inr M₁.root.1, ?_, ?_⟩
+    · grind;
     · exact Model.extendRoot.inr_satisfies_iff |>.not.mpr hA
-  let S : SolovaySentences T.standardProvability M₀.toFrame r₀ :=
+  let S : SolovaySentences T.standardProvability M₀.toFrame :=
     SolovaySentences.standard T M₀.toFrame
   use S.realization
   intro hC
   have : T.height ≤ M₁.height := by
     apply Order.le_of_lt_add_one
     calc
-      T.standardProvability.height < M₀.height     := S.theory_height hdnA hC
-      _                            = M₁.height + 1 := by simp [M₀]
+      T.standardProvability.height < M₀.height     := S.theory_height (T.standardProvability.syntactical_sound ℕ) hdnA hC
+      _                            = M₁.height + 1 := by simp [M₀];
   exact not_lt_of_ge this h
-
--- variable [T.standardProvability.SoundOnClass ((T.standardProvability^[·] ⊥) '' Set.univ)]
 
 /-- Arithmetical completeness of $\mathsf{GL}$-/
 theorem GL.arithmetical_completeness
@@ -50,18 +49,18 @@ theorem GL.arithmetical_completeness
     contrapose!;
     assumption;
   intro hA
-  obtain ⟨M₁, _, _, _, r₁, _, hA₁⟩ := GL.Kripke.iff_unprovable_exists_fintype_rooted_model.mp hA;
+  obtain ⟨M₁, _, _, _, _, hA₁⟩ := GL.Kripke.iff_unprovable_exists_fintype_rooted_model.mp hA;
   exact unprovable_realization_exists M₁ hA₁ <| by simp [height]
 
 theorem GLPlusBoxBot.arithmetical_completeness_aux
   {n : ℕ} (height : n ≤ T.height)
-  : (∀ f : T.StandardRealization, T ⊢ f A) → Modal.GL ⊢ □^[n] ⊥ ➝ A := by
-  suffices ¬Modal.GL ⊢ □^[n]⊥ ➝ A → ∃ f : T.StandardRealization, T ⊬ f A by
+  : (∀ f : T.StandardRealization, T ⊢ f A) → Modal.GL ⊢ □^[n] ⊥ 🡒 A := by
+  suffices ¬Modal.GL ⊢ □^[n]⊥ 🡒 A → ∃ f : T.StandardRealization, T ⊬ f A by
     contrapose!;
     assumption;
   intro hA
-  obtain ⟨M₁, _, _, _, r₁, _, hA₁⟩ := GL.Kripke.iff_unprovable_exists_fintype_rooted_model.mp hA;
-  have hA₁ : r₁ ⊧ □^[n]⊥ ∧ r₁ ⊭ A := by simpa [Formula.Kripke.Satisfies] using hA₁
+  obtain ⟨M₁, _, _, _, _, hA₁⟩ := GL.Kripke.iff_unprovable_exists_fintype_rooted_model.mp hA;
+  have hA₁ : M₁.root.1 ⊧ □^[n]⊥ ∧ M₁.root.1 ⊭ A := by simpa [Formula.Kripke.Satisfies] using hA₁
   have M₁_height : M₁.height < n := height_lt_iff_satisfies_boxbot.mpr hA₁.1
   exact unprovable_realization_exists M₁ hA₁.2 <| lt_of_lt_of_le (by simp [M₁_height]) height
 

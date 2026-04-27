@@ -21,7 +21,7 @@ namespace Modal
 def Formula.letterlessSpectrum (φ : Formula ℕ) (φ_closed : φ.Letterless := by grind) : Set ℕ :=
   match φ with
   | ⊥ => ∅
-  | φ ➝ ψ => (φ.letterlessSpectrum)ᶜ ∪ ψ.letterlessSpectrum
+  | φ 🡒 ψ => (φ.letterlessSpectrum)ᶜ ∪ ψ.letterlessSpectrum
   | □φ => { n | ∀ i < n, i ∈ φ.letterlessSpectrum }
 
 
@@ -31,7 +31,7 @@ namespace Formula.letterlessSpectrum
 
 @[simp, grind =] lemma def_bot : (⊥ : Formula _).letterlessSpectrum = ∅ := by simp [letterlessSpectrum]
 @[simp, grind =] lemma def_top : (⊤ : Formula _).letterlessSpectrum = Set.univ := by simp [letterlessSpectrum]
-@[grind =] lemma def_imp {hφψ : Letterless (φ ➝ ψ)} : (φ ➝ ψ).letterlessSpectrum hφψ = φ.letterlessSpectrumᶜ ∪ ψ.letterlessSpectrum := by simp [letterlessSpectrum]
+@[grind =] lemma def_imp {hφψ : Letterless (φ 🡒 ψ)} : (φ 🡒 ψ).letterlessSpectrum hφψ = φ.letterlessSpectrumᶜ ∪ ψ.letterlessSpectrum := by simp [letterlessSpectrum]
 @[grind =] lemma def_neg {hφ : Letterless (∼φ)} : (∼φ).letterlessSpectrum hφ = φ.letterlessSpectrumᶜ := by simp [letterlessSpectrum]
 @[grind =] lemma def_or {hφψ : Letterless (φ ⋎ ψ)}  : (φ ⋎ ψ).letterlessSpectrum hφψ = φ.letterlessSpectrum ∪ ψ.letterlessSpectrum := by simp [letterlessSpectrum];
 @[grind =] lemma def_and {hφψ : Letterless (φ ⋏ ψ)} : (φ ⋏ ψ).letterlessSpectrum hφψ = φ.letterlessSpectrum ∩ ψ.letterlessSpectrum := by simp [letterlessSpectrum];
@@ -213,8 +213,8 @@ lemma def_neg : (∼φ).Regular T ↔ ¬(φ.Regular T) := by simp [Formula.Regul
 lemma def_neg' : (∼φ).Regular T ↔ (φ.Singular T) := Iff.trans def_neg $ by rfl
 lemma def_and : (φ ⋏ ψ).Regular T ↔ (φ.Regular T) ∧ (ψ.Regular T) := by simp [Formula.Regular, Realization.interpret];
 lemma def_or : (φ ⋎ ψ).Regular T ↔ (φ.Regular T) ∨ (ψ.Regular T) := by simp [Formula.Regular, Realization.interpret]; tauto;
-lemma def_imp : (φ ➝ ψ).Regular T ↔ ((φ.Regular T) → (ψ.Regular T)) := by simp [Formula.Regular, Realization.interpret];
-lemma def_iff : (φ ⭤ ψ).Regular T ↔ ((φ.Regular T) ↔ (ψ.Regular T)) := by simp [Formula.Regular, Realization.interpret]; tauto;
+lemma def_imp : (φ 🡒 ψ).Regular T ↔ ((φ.Regular T) → (ψ.Regular T)) := by simp [Formula.Regular, Realization.interpret];
+lemma def_iff : (φ 🡘 ψ).Regular T ↔ ((φ.Regular T) ↔ (ψ.Regular T)) := by simp [Formula.Regular, Realization.interpret]; tauto;
 
 attribute [simp, grind .]
   def_bot
@@ -256,7 +256,7 @@ lemma def_neg : (∼φ).Singular T ↔ ¬(φ.Singular T) := by grind;
 lemma def_neg' : (∼φ).Singular T ↔ (φ.Regular T) := by grind;
 lemma def_and : (φ ⋏ ψ).Singular T ↔ (φ.Singular T) ∨ (ψ.Singular T) := by grind
 lemma def_or : (φ ⋎ ψ).Singular T ↔ (φ.Singular T) ∧ (ψ.Singular T) := by grind
-lemma def_imp : (φ ➝ ψ).Singular T ↔ (¬(φ.Singular T) ∧ (ψ.Singular T)) := by grind
+lemma def_imp : (φ 🡒 ψ).Singular T ↔ (¬(φ.Singular T) ∧ (ψ.Singular T)) := by grind
 
 attribute [grind .]
   def_bot
@@ -295,7 +295,7 @@ lemma iff_eq_letterlessSpectrum_eq_letterlessTrace (hX hY)  : X.letterlessSpectr
 end FormulaSet
 
 /-- boxbot instance of axiomT -/
-abbrev TBB (n : ℕ) : Formula ℕ := □^[(n + 1)]⊥ ➝ □^[n]⊥
+abbrev TBB (n : ℕ) : Formula ℕ := □^[(n + 1)]⊥ 🡒 □^[n]⊥
 
 section
 
@@ -397,10 +397,10 @@ namespace Kripke
 open Kripke
 open Formula.Kripke
 
-variable {F : Frame} {r : F} [F.IsRootedBy r] [Fintype F]
+variable {F : Frame} [F.IsPointRooted] [Fintype F]
 
 lemma iff_satisfies_mem_rank_letterlessSpectrum
-  {M : Model} {r : M} [Fintype M] [M.IsIrreflexive] [M.IsTransitive] [M.IsRootedBy r] {w : M}
+  {M : Model} [Fintype M] [M.IsIrreflexive] [M.IsTransitive] [M.IsPointRooted] {w : M}
   {φ : Formula ℕ} (φ_closed : φ.Letterless := by grind)
   : w ⊧ φ ↔ Frame.rank w ∈ φ.letterlessSpectrum := by
   induction φ generalizing w with
@@ -426,7 +426,7 @@ lemma iff_satisfies_mem_rank_letterlessSpectrum
   | _ => grind;
 
 lemma iff_satisfies_TBB_ne_rank
-  {M : Model} {r : M} [Fintype M] [M.IsIrreflexive] [M.IsTransitive] [M.IsRootedBy r] {w : M} {n : ℕ}
+  {M : Model} [Fintype M] [M.IsIrreflexive] [M.IsTransitive] [M.IsPointRooted] {w : M} {n : ℕ}
   : w ⊧ TBB n ↔ Frame.rank w ≠ n := by
   apply Iff.trans iff_satisfies_mem_rank_letterlessSpectrum;
   simp;
@@ -439,8 +439,12 @@ namespace Frame.finiteLinear
 
 abbrev of (i : Fin (n + 1)) : Frame.finiteLinear n := i
 
-instance : (Frame.finiteLinear n) |>.IsRootedBy 0 where
-  root_generates := by simp [Frame.finiteLinear, Fin.pos_iff_ne_zero]
+instance : (Frame.finiteLinear n) |>.IsPointRooted where
+  default := ⟨of 0, by grind⟩
+  uniq {r} := by
+    by_contra! hC;
+    have := r.2 0 (by grind);
+    grind;
 
 instance : (Frame.finiteLinear n) |>.IsIrreflexive where
   irrefl := by simp [Frame.finiteLinear]
@@ -468,28 +472,31 @@ lemma rank_of_eq_sub (i : Fin (n + 1)) : Frame.rank (of i) = n - i := by
       intro j
       exact id
 
-@[simp] lemma rank_zero : Frame.rank (0 : Frame.finiteLinear n) = n := by simpa using rank_of_eq_sub 0
+@[simp] lemma rank_zero : (Frame.finiteLinear n).height = n := by simpa using rank_of_eq_sub _
 
 end Frame.finiteLinear
 
 lemma letterlessSpectrum_TFAE (_ : φ.Letterless) : [
   n ∈ φ.letterlessSpectrum,
-  ∀ M : Model, [Fintype M] → [M.IsIrreflexive] → [M.IsTransitive] → ∀ r, [M.IsRootedBy r] → ∀ w : M.World, Frame.rank w = n → w ⊧ φ,
-  ∃ M : Model, ∃ _ : Fintype M, ∃ _ : M.IsIrreflexive, ∃ _ : M.IsTransitive, ∃ r, ∃ _ : M.IsRootedBy r, ∃ w : M.World, Frame.rank w = n ∧ w ⊧ φ
+  ∀ M : Model, [Fintype M] → [M.IsIrreflexive] → [M.IsTransitive] → [M.IsPointRooted] → ∀ w : M.World, Frame.rank w = n → w ⊧ φ,
+  ∃ M : Model, ∃ _ : Fintype M, ∃ _ : M.IsIrreflexive, ∃ _ : M.IsTransitive, ∃ _ : M.IsPointRooted, ∃ w : M.World, Frame.rank w = n ∧ w ⊧ φ
 ].TFAE := by
   tfae_have 1 → 2 := by
-    intro h M r _ _ _ _ w hw;
+    intro h M _ _ _ _ w hw;
     apply iff_satisfies_mem_rank_letterlessSpectrum (by grind) |>.mpr;
     apply hw ▸ h;
   tfae_have 2 → 3 := by
     intro h;
     let M : Kripke.Model := ⟨Frame.finiteLinear n, λ p i => True⟩;
-    use M;
-    refine ⟨inferInstance, inferInstance, inferInstance, 0, inferInstance, ?_⟩;
-    . use 0;
-      simpa using h M _ 0;
+    use ⟨Frame.finiteLinear n, λ p i => True⟩;
+    refine ⟨inferInstance, inferInstance, inferInstance, inferInstance, ?_⟩;
+    . use M.root;
+      constructor;
+      . exact Frame.finiteLinear.rank_zero;
+      . apply h;
+        exact Frame.finiteLinear.rank_zero;
   tfae_have 3 → 1 := by
-    rintro ⟨M, _, _, _, r, _, w, rfl, hw⟩;
+    rintro ⟨M, _, _, _, _, w, rfl, hw⟩;
     apply iff_satisfies_mem_rank_letterlessSpectrum (by grind) |>.mp hw;
   tfae_finish;
 
@@ -507,17 +514,17 @@ lemma iff_GL_provable_letterlessSpectrum_Univ : Modal.GL ⊢ φ ↔ φ.letterles
   constructor;
   . intro h n;
     apply Kripke.letterlessSpectrum_TFAE (φ := φ) (by grind) |>.out 1 0 |>.mp;
-    intro M _ _ _ r _ w _;
+    intro M _ _ _ _ _ w;
     have := GL.Kripke.fintype_completeness_TFAE.out 0 1 |>.mp h;
     apply @this M.toFrame;
   . intro h;
     apply GL.Kripke.fintype_completeness_TFAE.out 1 0 |>.mp;
-    intro M _ _ _ r _ V x;
+    intro M _ _ _ _ V x;
     have := Kripke.letterlessSpectrum_TFAE (φ := φ) (n := Kripke.Frame.rank x) (by grind) |>.out 0 1 |>.mp;
-    apply this (by grind) _ r x rfl;
+    apply this (by grind) _ x rfl;
 
-lemma iff_GL_provable_C_subset_letterlessSpectrum : Modal.GL ⊢ (φ ➝ ψ) ↔ φ.letterlessSpectrum hφ ⊆ ψ.letterlessSpectrum hψ := by
-  apply Iff.trans $ iff_GL_provable_letterlessSpectrum_Univ (show (φ ➝ ψ).Letterless by grind);
+lemma iff_GL_provable_C_subset_letterlessSpectrum : Modal.GL ⊢ (φ 🡒 ψ) ↔ φ.letterlessSpectrum hφ ⊆ ψ.letterlessSpectrum hψ := by
+  apply Iff.trans $ iff_GL_provable_letterlessSpectrum_Univ (show (φ 🡒 ψ).Letterless by grind);
   rw [Formula.letterlessSpectrum.def_imp];
   suffices (∀ i, i ∉ φ.letterlessSpectrum ∨ i ∈ ψ.letterlessSpectrum) ↔ φ.letterlessSpectrum ⊆ ψ.letterlessSpectrum by
     simpa [Set.eq_univ_iff_forall];
@@ -526,7 +533,7 @@ lemma iff_GL_provable_C_subset_letterlessSpectrum : Modal.GL ⊢ (φ ➝ ψ) ↔
     have := @h i;
     tauto;
 
-lemma iff_GL_provable_E_eq_letterlessSpectrum : Modal.GL ⊢ (φ ⭤ ψ) ↔ φ.letterlessSpectrum = ψ.letterlessSpectrum := by
+lemma iff_GL_provable_E_eq_letterlessSpectrum : Modal.GL ⊢ (φ 🡘 ψ) ↔ φ.letterlessSpectrum = ψ.letterlessSpectrum := by
   rw [
     Set.Subset.antisymm_iff,
     ←iff_GL_provable_C_subset_letterlessSpectrum,
@@ -536,7 +543,7 @@ lemma iff_GL_provable_E_eq_letterlessSpectrum : Modal.GL ⊢ (φ ⭤ ψ) ↔ φ.
   . intro h; constructor <;> cl_prover [h];
   . rintro ⟨h₁, h₂⟩; cl_prover [h₁, h₂];
 
-lemma GL_letterlessTrace_TBB_normalization (h : φ.letterlessTrace.Finite) : Modal.GL ⊢ φ ⭤ (⩕ n ∈ h.toFinset, (TBB n)) := by
+lemma GL_letterlessTrace_TBB_normalization (h : φ.letterlessTrace.Finite) : Modal.GL ⊢ φ 🡘 (⩕ n ∈ h.toFinset, (TBB n)) := by
   apply iff_GL_provable_E_eq_letterlessSpectrum _ _ |>.mpr;
   . calc
       _ = ⋂ i ∈ φ.letterlessTrace, (TBB i).letterlessSpectrum := by
@@ -551,7 +558,7 @@ lemma GL_letterlessTrace_TBB_normalization (h : φ.letterlessTrace.Finite) : Mod
   . show (⩕ n ∈ h.toFinset, TBB n).Letterless;
     grind;
 
-lemma GL_letterlessSpectrum_TBB_normalization (h : φ.letterlessSpectrum.Finite) : Modal.GL ⊢ φ ⭤ ∼(⩕ n ∈ h.toFinset, (TBB n)) := by
+lemma GL_letterlessSpectrum_TBB_normalization (h : φ.letterlessSpectrum.Finite) : Modal.GL ⊢ φ 🡘 ∼(⩕ n ∈ h.toFinset, (TBB n)) := by
   have h' : (∼φ).letterlessTrace.Finite := by grind;
   have := GL_letterlessTrace_TBB_normalization (show (∼φ).Letterless by grind) h';
   rw [show h.toFinset = h'.toFinset by grind];
@@ -612,14 +619,14 @@ lemma letterless_arithmetical_completeness [𝗜𝚺₁ ⪯ T] (hφ : φ.Letterl
     have e : T.LetterlessStandardRealization φ = f φ := Realization.letterless_interpret hφ
     exact e ▸ h;
 
-lemma iff_regular_of_provable_E [𝗜𝚺₁ ⪯ T] (hφ : φ.Letterless) (hψ : ψ.Letterless) (h : Modal.GL ⊢ φ ⭤ ψ)
+lemma iff_regular_of_provable_E [𝗜𝚺₁ ⪯ T] (hφ : φ.Letterless) (hψ : ψ.Letterless) (h : Modal.GL ⊢ φ 🡘 ψ)
   : φ.Regular T ↔ ψ.Regular T := by
-  have : T ⊢ T.LetterlessStandardRealization (φ ⭤ ψ) := letterless_arithmetical_completeness (by grind) |>.mp h;
-  have : ℕ ⊧ₘ T.LetterlessStandardRealization (φ ⭤ ψ) := ArithmeticTheory.SoundOn.sound (F := λ _ => True) this (by simp);
+  have : T ⊢ T.LetterlessStandardRealization (φ 🡘 ψ) := letterless_arithmetical_completeness (by grind) |>.mp h;
+  have : ℕ ⊧ₘ T.LetterlessStandardRealization (φ 🡘 ψ) := ArithmeticTheory.SoundOn.sound (F := λ _ => True) this (by simp);
   simp [Realization.interpret, Formula.Regular] at this ⊢;
   tauto;
 
-lemma iff_singular_of_provable_E [𝗜𝚺₁ ⪯ T] (hφ : φ.Letterless) (hψ : ψ.Letterless) (h : Modal.GL ⊢ φ ⭤ ψ)
+lemma iff_singular_of_provable_E [𝗜𝚺₁ ⪯ T] (hφ : φ.Letterless) (hψ : ψ.Letterless) (h : Modal.GL ⊢ φ 🡘 ψ)
   : φ.Singular T ↔ ψ.Singular T := Iff.not $ iff_regular_of_provable_E hφ hψ h
 
 
@@ -635,7 +642,7 @@ lemma Formula.iff_regular_letterlessTrace_finite : φ.Regular T ↔ φ.letterles
       simpa [Formula.letterlessTrace] using this;
     apply iff_regular_of_provable_E ?_ ?_ (GL_letterlessSpectrum_TBB_normalization (by assumption) this) |>.not.mpr;
     . apply Formula.Regular.def_neg.not.mpr;
-      push_neg;
+      push Not;
       exact TBB_conj'_regular;
     . assumption;
     . convert @TBBMinus_letterless' φ.letterlessTrace $ by simpa [Formula.letterlessTrace, Set.Cofinite]
@@ -681,7 +688,7 @@ open Classical LO.Entailment in
 lemma GL.iff_provable_closed_sumQuasiNormal_subset_letterlessSpectrum (hSR : X.Singular T ∨ φ.Regular T)
   : Modal.GL.sumQuasiNormal X ⊢ φ ↔ X.letterlessSpectrum ⊆ φ.letterlessSpectrum := by
   calc
-    _ ↔ ∃ Y, (∀ ψ ∈ Y, ψ ∈ X) ∧ Modal.GL ⊢ Finset.conj Y ➝ φ := Logic.sumQuasiNormal.iff_provable_finite_provable_letterless X_letterless
+    _ ↔ ∃ Y, (∀ ψ ∈ Y, ψ ∈ X) ∧ Modal.GL ⊢ Finset.conj Y 🡒 φ := Logic.sumQuasiNormal.iff_provable_finite_provable_letterless X_letterless
     _ ↔ ∃ Y : Finset (Formula ℕ), ∃ _ : ∀ ψ ∈ Y, ψ ∈ X, (Finset.conj Y).letterlessSpectrum ⊆ φ.letterlessSpectrum := by
       constructor;
       . rintro ⟨Y, _, hY₂⟩;
@@ -908,6 +915,7 @@ lemma FormulaSet.comp_letterlessTrace_finite_of_singular (X_singular : X.Singula
   have := FormulaSet.comp_letterlessTrace_letterlessSpectrum (hX := X_letterless);
   grind;
 
+set_option backward.isDefEq.respectTransparency false in
 lemma GL.eq_closed_singular_sumQuasiNormal_GLβMinus (X_singular : X.Singular T) : Modal.GL.sumQuasiNormal X = Modal.GLβMinus (X.letterlessTrace) := by
   apply GL.iff_eq_closed_sumQuasiNormal_eq_letterlessSpectrum (T := T) ?_ ?_ ?_ |>.mpr;
   . simp [TBBMinus_letterlessSpectrum, FormulaSet.letterlessTrace];
@@ -971,14 +979,14 @@ variable
   {T U : Theory L} [DecidablePred (· ∈ T)] [DecidablePred (· ∈ U)]
   {φ : Sentence L}
 
-lemma compact_add_right (h : (T + U) ⊢ φ) : ∃ (s : { s : Finset (Sentence L) // ↑s ⊆ U }), T ⊢ s.1.conj ➝ φ := by
+lemma compact_add_right (h : (T + U) ⊢ φ) : ∃ (s : { s : Finset (Sentence L) // ↑s ⊆ U }), T ⊢ s.1.conj 🡒 φ := by
   obtain ⟨⟨s, hsTU⟩, hs⟩ := Theory.compact' h;
   let sT := { ψ ∈ s | ψ ∈ T };
   let sU := { ψ ∈ s | ψ ∈ U };
 
   use ⟨sU, λ _ => by simp [sU]⟩;
 
-  have : (∅ : Theory _) ⊢ sT.conj ➝ sU.conj ➝ φ := CK!_iff_CC!.mp $ C!_trans CKFconjFconjUnion! $ by
+  have : (∅ : Theory _) ⊢ sT.conj 🡒 sU.conj 🡒 φ := CK!_iff_CC!.mp $ C!_trans CKFconjFconjUnion! $ by
     have : sT ∪ sU = s:= by
       ext ψ;
       constructor;
@@ -991,7 +999,7 @@ lemma compact_add_right (h : (T + U) ⊢ φ) : ∃ (s : { s : Finset (Sentence L
   apply Axiomatized.provable_axm;
   grind;
 
-lemma compact_add_left (h : (T + U) ⊢ φ) : ∃ (s : { s : Finset (Sentence L) // ↑s ⊆ T }), U ⊢ s.1.conj ➝ φ := by
+lemma compact_add_left (h : (T + U) ⊢ φ) : ∃ (s : { s : Finset (Sentence L) // ↑s ⊆ T }), U ⊢ s.1.conj 🡒 φ := by
   rw [show (T + U = U + T) by simp [add_def, Set.union_comm]] at h
   simpa using compact_add_right h;
 
@@ -1029,7 +1037,7 @@ theorem letterless_provabilityLogic
 
   constructor;
   . rintro ⟨Γ, hΓ₁, hΓ₂⟩ f;
-    have H : T ⊢ (f Γ.conj) ➝ (f A) := GL.arithmetical_soundness hΓ₂;
+    have H : T ⊢ (f Γ.conj) 🡒 (f A) := GL.arithmetical_soundness hΓ₂;
     rw [
       show f Γ.conj = (GL.uniformStandardRealization T) Γ.conj from
         Realization.letterless_interpret $ Modal.Formula.letterless_fconj.mpr λ B hB ↦ X_letterless B $ hΓ₁ hB
@@ -1043,7 +1051,7 @@ theorem letterless_provabilityLogic
     tauto;
   . intro h;
     obtain ⟨Γ, hΓX, H⟩ :
-      ∃ Γ : Finset (Modal.Formula ℕ), ↑Γ ⊆ X ∧ T ⊢ (Γ.image (GL.uniformStandardRealization T)).conj ➝ (GL.uniformStandardRealization T) A := by
+      ∃ Γ : Finset (Modal.Formula ℕ), ↑Γ ⊆ X ∧ T ⊢ (Γ.image (GL.uniformStandardRealization T)).conj 🡒 (GL.uniformStandardRealization T) A := by
       obtain ⟨⟨s, hs₁⟩, hs₂⟩ := Theory.compact_add_right $ h (GL.uniformStandardRealization T);
       obtain ⟨t, ht₁, ht₂⟩ := finite_preimage_choice s X (GL.uniformStandardRealization T) hs₁;
       use t;

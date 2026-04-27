@@ -54,7 +54,7 @@ lemma box_at_terminal {x : F.World} (hx : x ∈ F.terminals) (h : Satisfies ⟨F
 
 lemma dia_at_terminal {x : F.World} (hx : x ∈ F.terminals) (h : ¬Satisfies ⟨F, V⟩ x φ) : ¬Satisfies ⟨F, V⟩ x (◇φ) := by
   apply Satisfies.dia_def.not.mpr;
-  push_neg;
+  push Not;
   intro y Rxy;
   have := hx Rxy;
   subst this;
@@ -74,7 +74,7 @@ instance : Modal.Grz ⪯ Modal.GrzPoint2 := Hilbert.Normal.weakerThan_of_subset_
 lemma GrzPoint2_of_Grz (h : (φ.atoms.image (λ a => Axioms.Point2 (.atom a))).toSet *⊢[Modal.Grz] φ) : Modal.GrzPoint2 ⊢ φ := by
   obtain ⟨Γ, hΓ₁, hΓ₂⟩ := Context.provable_iff.mp h;
   simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe] at hΓ₁;
-  replace hΓ₂ : Modal.GrzPoint2 ⊢ ⋀Γ ➝ φ := WeakerThan.pbl $ FiniteContext.provable_iff.mp hΓ₂;
+  replace hΓ₂ : Modal.GrzPoint2 ⊢ ⋀Γ 🡒 φ := WeakerThan.pbl $ FiniteContext.provable_iff.mp hΓ₂;
   exact hΓ₂ ⨀ by
     apply Conj₂!_intro;
     intro γ hγ;
@@ -83,7 +83,7 @@ lemma GrzPoint2_of_Grz (h : (φ.atoms.image (λ a => Axioms.Point2 (.atom a))).t
 
 lemma not_Grz_of_not_GrzPoint2 (h : Modal.GrzPoint2 ⊬ φ) : (φ.atoms.image (λ a => Axioms.Point2 (.atom a))).toList ⊬[Modal.Grz] φ := by
   have := Context.provable_iff.not.mp $ not_imp_not.mpr GrzPoint2_of_Grz h;
-  push_neg at this;
+  push Not at this;
   convert this ((φ.atoms.image (λ a => Axioms.Point2 (.atom a))).toList) $ by simp;
 
 end
@@ -123,22 +123,18 @@ instance : Complete Modal.GrzPoint2 FrameClass.finite_GrzPoint2 := ⟨by
   contrapose;
   intro hφ;
 
-  replace hφ : Modal.Grz ⊬ ⋀((φ.atoms.image (λ a => Axioms.Point2 (atom a))).toList) ➝ φ := not_Grz_of_not_GrzPoint2 hφ;
+  replace hφ : Modal.Grz ⊬ ⋀((φ.atoms.image (λ a => Axioms.Point2 (atom a))).toList) 🡒 φ := not_Grz_of_not_GrzPoint2 hφ;
   generalize eΓ : (φ.atoms.image (λ a => Axioms.Point2 (atom a))).toList = Γ at hφ;
   obtain ⟨M, r, hM, hΓφ⟩ := exists_model_world_of_not_validOnFrameClass $ not_imp_not.mpr (Complete.complete (𝓢 := Modal.Grz) (𝓜 := FrameClass.finite_Grz)) hφ;
   replace hM := Set.mem_setOf_eq.mp hM;
-  -- have : IsPartialOrder _ M.toFrame := IsPartialOrder.mk
+  have : M.IsPartialOrder := inferInstance;
 
   let RM := M↾r;
-  let r' : RM.World := ⟨r, by tauto⟩;
-  have RM_rooted : ∀ (w : RM.World), r' ≺ w := by
-    intro w;
-    by_cases e : r' = w;
-    . subst e; apply RM.refl;
-    . exact Frame.IsRootedBy.root_generates w (by tauto) |>.unwrap;
+  let r' : RM.Root := ⟨⟨r, by tauto⟩, by grind⟩;
+  have : RM.IsPartialOrder := inferInstance;
 
-  replace hΓφ : ¬(r' ⊧ ⋀Γ → r' ⊧ φ) := Satisfies.imp_def.not.mp $ Model.pointGenerate.modal_equivalent_at_root (r := r) |>.not.mpr hΓφ;
-  push_neg at hΓφ;
+  replace hΓφ : ¬(Satisfies RM r'.1 (⋀Γ) → Satisfies RM r'.1 φ) := Satisfies.imp_def.not.mp $ Model.pointGenerate.modal_equivalent_at_root (r := r) |>.not.mpr hΓφ;
+  push Not at hΓφ;
   obtain ⟨hΓ, hφ⟩ := hΓφ;
 
   let M' : Kripke.Model := {
@@ -158,26 +154,9 @@ instance : Complete Modal.GrzPoint2 FrameClass.finite_GrzPoint2 := ⟨by
   constructor;
   . apply Set.mem_setOf_eq.mpr;
     exact {
-      refl := by
-        intro x;
-        match x with
-        | Sum.inl x => simp [M'];
-        | Sum.inr x => simp_all [M'];,
-      trans := by
-        intro x y z Rxy Ryz;
-        match x, y, z with
-        | Sum.inl x, Sum.inl y, Sum.inl z => exact Frame.pointGenerate.isTransitive.trans _ _ _ Rxy Ryz;
-        | _, _, Sum.inr z => simp_all [M'];
-        | _, Sum.inr y, Sum.inl z => simp_all [M'];
-      antisymm := by
-        intro x y Rxy Ryz;
-        match x, y with
-        | Sum.inl x, Sum.inl y =>
-          simp only [Sum.inl.injEq, M'];
-          exact Frame.pointGenerate.isAntisymmetric.antisymm _ _ Rxy Ryz;
-        | Sum.inl x, Sum.inr y => simp_all [M'];
-        | Sum.inr x, Sum.inr y => simp_all [M'];
-        | Sum.inr x, Sum.inl y => simp_all [M'];
+      refl := by grind;
+      trans := by grind;
+      antisymm := by grind;
       ps_convergent := by
         rintro x y z Rxy Ryz;
         use (Sum.inr ());
@@ -185,15 +164,15 @@ instance : Complete Modal.GrzPoint2 FrameClass.finite_GrzPoint2 := ⟨by
   . have H₁ : ∀ a ∈ φ.atoms, ∀ t ∈ RM.toFrame.terminals, ∀ t' ∈ RM.toFrame.terminals, RM a t → RM a t' := by
       intro a ha t t_terminal t' t'_terminal hy;
       by_contra hy';
-      have : ¬t' ⊧ (◇atom a) := Kripke.Satisfies.dia_at_terminal t'_terminal hy';
-      have : ¬r' ⊧ □(◇atom a) := by
+      have : ¬Satisfies _ t' (◇atom a) := Kripke.Satisfies.dia_at_terminal t'_terminal hy';
+      have : ¬Satisfies _ r'.1 (□(◇atom a)) := by
         apply Satisfies.box_def.not.mpr;
-        push_neg;
+        push Not;
         use t';
         constructor;
-        . apply RM_rooted;
+        . grind;
         . assumption;
-      have : ¬r' ⊧ ◇(□atom a) := by
+      have : ¬Satisfies _ r'.1 (◇(□atom a)) := by
         contrapose! this;
         apply Satisfies.conj_def.mp hΓ $ Axioms.Point2 (atom a);
         . subst eΓ;
@@ -201,11 +180,11 @@ instance : Complete Modal.GrzPoint2 FrameClass.finite_GrzPoint2 := ⟨by
           use a;
         . assumption;
       have := Satisfies.dia_def.not.mp this;
-      push_neg at this;
-      have : ¬t ⊧ □atom a := this t (RM_rooted t);
-      have : t ⊧ □atom a := Kripke.Satisfies.box_at_terminal t_terminal hy;
+      push Not at this;
+      have : ¬Satisfies _ t (□atom a) := this t (by grind);
+      have : Satisfies _ t (□atom a) := Kripke.Satisfies.box_at_terminal t_terminal hy;
       contradiction;
-    have H₂ : ∀ t ∈ RM.terminals, ∀ ψ ∈ φ.subformulas, t ⊧ ψ ↔ (Satisfies M' (Sum.inr ()) ψ) := by
+    have H₂ : ∀ t ∈ RM.terminals, ∀ ψ ∈ φ.subformulas, (Satisfies _ t ψ) ↔ (Satisfies M' (Sum.inr ()) ψ) := by
       intro t t_terminal ψ ψ_sub;
       induction ψ with
       | hatom a =>
@@ -243,7 +222,7 @@ instance : Complete Modal.GrzPoint2 FrameClass.finite_GrzPoint2 := ⟨by
           apply ihψ (by grind) |>.mpr;
           apply ht;
           tauto;
-    have : ∀ y : RM.World, ∀ ψ ∈ φ.subformulas, y ⊧ ψ ↔ (Satisfies M' (Sum.inl y) ψ) := by
+    have : ∀ y : RM.World, ∀ ψ ∈ φ.subformulas, (Satisfies _ y ψ) ↔ (Satisfies M' (Sum.inl y) ψ) := by
       intro y ψ ψ_sub;
       induction ψ generalizing y with
       | hbox ψ ihψ =>
@@ -292,7 +271,7 @@ instance : Modal.Grz ⪱ Modal.GrzPoint2 := by
           antisymm := by simp [M]; omega;
         };
       . apply Satisfies.imp_def₂.not.mpr;
-        push_neg;
+        push Not;
         constructor;
         . apply Satisfies.dia_def.mpr;
           use 1;
@@ -302,12 +281,12 @@ instance : Modal.Grz ⪱ Modal.GrzPoint2 := by
             simp [Satisfies, M];
             grind;
         . apply Satisfies.box_def.not.mpr;
-          push_neg;
+          push Not;
           use 2;
           constructor;
           . omega;
           . apply Satisfies.dia_def.not.mpr;
-            push_neg;
+            push Not;
             simp [M, Semantics.Models, Satisfies, Frame.Rel'];
 
 instance : Modal.S4Point2McK ⪱ Modal.GrzPoint2 := by
